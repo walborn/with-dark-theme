@@ -1,70 +1,304 @@
-# Getting Started with Create React App
+# With dark theme
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This example demonstrates how to add dark theme to your react project
 
-## Available Scripts
+## **Why?**
 
-In the project directory, you can run:
+Темная тема стала стандартом де-факто последнее время. Часто это может стать причиной отказа от использования сайтом. Особенно если его используют программисты, которые сплошь и рядом работают в тёмной теме.
 
-### `npm start`
+## **How?**
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Я покажу, как добавить темную тему в React проект. Разберем основные моменты и сделаем всё красиво.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## **What?**
 
-### `npm test`
+В кратце так.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Создадим create-react-app проект
 
-### `npm run build`
+2. Добавим контекст с переключателем темы
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. Объявим переменные для каждой темы
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Итак, поехали:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. С помощью `cra` создаем проект и сразу добавляем `sass` для удобства работы со стилями
 
-### `npm run eject`
+```bash
+> npx create-react-app with-dark-theme
+> cd with-dark-theme
+> npm i sass -S
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+2. Удалим ненужные файлы
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+> cd src
+> rm App.css App.js App.test.js index.css logo.svg
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. Создадим удобную структур
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+# внутри src/
+> mkdir -p components/{Root,Toggle} contexts providers
+> touch index.scss components/Root/index.js components/Toggle/{index.js,index.module.scss} contexts/ThemeContext.js providers/ThemeProvider.js
+```
 
-## Learn More
+Должна получиться такая структура внутри `src/`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+src
+├── components
+│   ├── Root
+│   │   └── index.js
+│   └── Toggle
+│       ├── index.js
+│       └── index.module.scss
+├── contexts
+│   └── ThemeContext.js
+├── providers
+│   └── ThemeProvider.js
+├── index.js
+├── index.scss
+└── ...
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Поскольку мы внесли изменения в структуру, то изменим `index.js`
 
-### Code Splitting
+```jsx
+// src/index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import reportWebVitals from './reportWebVitals'
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+import Root from './components/Root' // теперь точка входа у нас не App, а Root
 
-### Analyzing the Bundle Size
+import './index.scss' // поменяли css на scss
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+ReactDOM.render(
+  <React.StrictMode>
+    <Root />
+  </React.StrictMode>,
+  document.getElementById('root')
+)
+```
 
-### Making a Progressive Web App
+```jsx
+// src/components/Root/index.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+import React from 'react'
 
-### Advanced Configuration
+const Root = () => (
+	<div>There are will be Dark Theme</div>
+)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+export default Root
+```
 
-### Deployment
+Проект уже запускается, но никакой темной темы пока еще нет.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Давайте добавим ее!
 
-### `npm run build` fails to minify
+Делается это через контекст. В `ThemeContext.js` и `ThemeProvider.js` напишем следующий код:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```jsx
+// src/contexts/ThemeContext.js
+import React from 'react'
+
+export const themes = {
+  dark: 'dark',
+  light: 'light',
+}
+
+export const ThemeContext = React.createContext({})
+```
+
+```jsx
+// src/providers/ThemeProvider.js
+import React from 'react'
+import { ThemeContext, themes } from 'src/contexts/ThemeContext'
+
+const getTheme = () => {
+  const theme = `${window?.localStorage?.getItem('theme')}`
+  if (Object.values(themes).includes(theme)) return theme
+
+  const userMedia = window.matchMedia('(prefers-color-scheme: light)')
+  if (userMedia.matches) return themes.light
+
+  return themes.dark
+}
+
+const ThemeProvider = ({ children }) => {
+  const [ theme, setTheme ] = React.useState(getTheme)
+
+  React.useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('theme', theme)
+  }, [ theme ])
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  )
+}
+
+export default ThemeProvider
+```
+
+И добавим его в `index.js`
+
+```jsx
+import React from 'react'
+import ReactDOM from 'react-dom'
+import reportWebVitals from './reportWebVitals'
+
+import ThemeProvider from './providers/ThemeProvider' // +
+import Root from './components/Root'
+
+import './index.scss'
+
+ReactDOM.render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <Root />
+    </ThemeProvider>
+  </React.StrictMode>,
+  document.getElementById('root')
+)
+...
+```
+
+Осталось научить приложение менять тему. Воспользуемся тогглером
+
+```jsx
+// src/components/Toggle/index.js
+import React from 'react'
+import styles from './index.module.scss'
+
+const Toggle = ({ value, onChange }) => (
+  <label className={styles.switch} htmlFor="toggler">
+    <input
+      id="toggler"
+      type="checkbox"
+      onClick={onChange}
+      checked={value}
+      readOnly
+    />
+    <span className={styles.slider} />
+    <span className={styles.wave} />
+  </label>
+)
+
+export default Toggle
+```
+
+```scss
+.root {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 50px;
+  transform: translate(-50%, -50%);
+  input {
+    display: none;
+  }
+  .wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 120px;
+    height: 50px;
+    border-radius: 40px;
+    &:after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 20%;
+      width: 60px;
+      height: 3px;
+      background: #ffffff;
+      border-radius: 100%;
+      opacity: 0.4;
+    }
+    &:before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: 30%;
+      width: 35px;
+      height: 2px;
+      background: #ffffff;
+      border-radius: 100%;
+      opacity: 0.3;
+    }
+  }
+  .slider {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    overflow: hidden;
+    background-color: #e74a42;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 1.4s;
+    &:before,
+    &:after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      width: 40px;
+      height: 40px;
+      background-color: #ffffff;
+      border-radius: 30px;
+    }
+    &:before {
+      transition: 0.4s;
+    }
+    &:after {
+      transition: 0.5s;
+    }
+  }
+  input:checked + .slider {
+    background-color: transparent;
+    &:before,
+    &:after {
+      transform: translateX(70px);
+    }
+  }
+  input:checked ~ .wave {
+    display: block;
+    background-color: #3398d9;
+  }
+}
+```
+
+И теперь добавим тогл на главную страницу
+
+```jsx
+import React from 'react'
+import { ThemeContext, themes } from '../../contexts/ThemeContext'
+import Toggle from '../Toggle'
+
+const Root = () => (
+  <ThemeContext.Consumer>
+    {({ theme, setTheme }) => (
+      <Toggle
+        onChange={() => {
+          if (theme === themes.light) setTheme(themes.dark)
+          if (theme === themes.dark) setTheme(themes.light)
+        }}
+        value={theme === themes.dark}
+      />
+    )}
+  </ThemeContext.Consumer>
+)
+
+export default Root
+```
